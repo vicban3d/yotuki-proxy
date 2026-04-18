@@ -17,22 +17,72 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-    iframe { width: 100%; height: 100%; border: 0; display: block; }
+    #player { width: 100%; height: 100%; }
   </style>
 </head>
 <body>
+  <div id="player"></div>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    var v = new URLSearchParams(location.search).get('v') || '';
-    // Validate: YouTube video IDs are 11 alphanumeric/dash/underscore characters
-    if (/^[A-Za-z0-9_-]{11}$/.test(v)) {
-      var iframe = document.createElement('iframe');
-      iframe.src = 'https://www.youtube.com/embed/' + v
-        + '?autoplay=1&controls=1&rel=0&playsinline=1';
-      iframe.setAttribute('allow',
-        'autoplay; fullscreen; encrypted-media; gyroscope; accelerometer; picture-in-picture');
-      iframe.setAttribute('allowfullscreen', '');
-      iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-      document.body.appendChild(iframe);
+    var player;
+    var videoId = new URLSearchParams(location.search).get('v') || '';
+    var startTime = parseInt(new URLSearchParams(location.search).get('start') || '0');
+    
+    function onYouTubeIframeAPIReady() {
+      if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        return;
+      }
+      
+      player = new YT.Player('player', {
+        width: '100%',
+        height: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 1,
+          rel: 0,
+          playsinline: 1,
+          start: startTime
+        },
+        events: {
+          'onStateChange': onPlayerStateChange,
+          'onReady': onPlayerReady
+        }
+      });
+    }
+    
+    function onPlayerReady(event) {
+      // Auto-play on ready
+      event.target.playVideo();
+    }
+    
+    function onPlayerStateChange(event) {
+      // Optional: emit state changes to parent
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'playerStateChange',
+          state: event.data,
+          currentTime: player ? player.getCurrentTime() : 0
+        }, '*');
+      }
+    }
+    
+    // Listen for requests from parent app
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'getPlaybackTime' && player) {
+        var currentTime = player.getCurrentTime();
+        var duration = player.getDuration();
+        window.parent.postMessage({
+          type: 'playbackTime',
+          currentTime: currentTime,
+          duration: duration
+        }, '*');
+      }
+    });
+    
+    // If YouTube API is already loaded, call the ready function
+    if (typeof YT !== 'undefined' && YT.Player) {
+      onYouTubeIframeAPIReady();
     }
   </script>
 </body>
