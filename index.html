@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!--
+    This file must be hosted on a real HTTPS domain (GitHub Pages, Netlify, Vercel, etc.)
+    so that YouTube receives a valid HTTP Referer and does not block playback (error 153).
+
+    Deployment (GitHub Pages – free):
+      1. Create a new public GitHub repo, e.g. "yt-proxy"
+      2. Copy this file as index.html into that repo
+      3. Enable GitHub Pages (Settings → Pages → Deploy from main branch / root)
+      4. Your proxy URL will be: https://<username>.github.io/yt-proxy/
+      5. Set PROXY_BASE_URL in src/components/VideoPlayer.tsx to that URL
+  -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
+  </style>
+</head>
+<body>
+  <script>
+    var v = new URLSearchParams(location.search).get('v') || '';
+    // Validate: YouTube video IDs are 11 alphanumeric/dash/underscore characters
+    if (/^[A-Za-z0-9_-]{11}$/.test(v)) {
+      var iframe = document.createElement('iframe');
+      iframe.src = 'https://www.youtube.com/embed/' + v
+        + '?autoplay=1&controls=1&rel=0&playsinline=1';
+      iframe.setAttribute('allow',
+        'autoplay; fullscreen; encrypted-media; gyroscope; accelerometer; picture-in-picture');
+      iframe.setAttribute('allowfullscreen', '');
+      iframe.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+      document.body.appendChild(iframe);
+    }
+  </script>
+</body>
+</html>
